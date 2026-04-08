@@ -640,8 +640,6 @@ class OxaamScraperService
             '2',
             '--retry-delay',
             '1',
-            '--retry-all-errors',
-            '--retry-connrefused',
             '-A',
             (string) config('services.oxaam.user_agent'),
             '-H',
