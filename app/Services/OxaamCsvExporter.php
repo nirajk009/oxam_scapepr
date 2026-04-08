@@ -26,43 +26,58 @@ class OxaamCsvExporter
         }
 
         fputcsv($handle, [
-            'run_id',
+            'row_type',
+            'last_run_id',
+            'first_run_id',
             'status',
             'service',
             'account_email',
             'account_password',
             'code_url',
+            'seen_count',
             'error_message',
-            'scraped_at',
+            'last_scraped_at',
+            'first_scraped_at',
             'session_email',
             'session_uses_after',
         ]);
 
-        $seenCredentials = [];
+        foreach ($this->aggregateSuccessfulRuns($runs) as $group) {
+            fputcsv($handle, [
+                'unique_success',
+                $group['last_run']->id,
+                $group['first_run']->id,
+                'success',
+                $group['last_run']->service_label ?? $group['last_run']->target_service,
+                $group['last_run']->account_email,
+                $group['last_run']->account_password,
+                $group['last_run']->code_url,
+                $group['seen_count'],
+                null,
+                $group['last_run']->scraped_at?->format('Y-m-d H:i:s'),
+                $group['first_run']->scraped_at?->format('Y-m-d H:i:s'),
+                $group['last_run']->session?->registration_email,
+                $group['last_run']->session_uses_after,
+            ]);
+        }
 
         foreach ($runs as $run) {
             if ($run->status === 'success') {
-                $key = implode('|', [
-                    $run->account_email,
-                    $run->account_password,
-                    $run->code_url,
-                ]);
-
-                if (isset($seenCredentials[$key])) {
-                    continue;
-                }
-
-                $seenCredentials[$key] = true;
+                continue;
             }
 
             fputcsv($handle, [
+                'failed_run',
+                $run->id,
                 $run->id,
                 $run->status,
                 $run->service_label ?? $run->target_service,
                 $run->account_email,
                 $run->account_password,
                 $run->code_url,
+                1,
                 $run->error_message,
+                $run->scraped_at?->format('Y-m-d H:i:s'),
                 $run->scraped_at?->format('Y-m-d H:i:s'),
                 $run->session?->registration_email,
                 $run->session_uses_after,
@@ -72,6 +87,40 @@ class OxaamCsvExporter
         fclose($handle);
 
         return $path;
+    }
+
+    /**
+     * @param  list<OxaamRun>  $runs
+     * @return list<array{first_run: OxaamRun, last_run: OxaamRun, seen_count: int}>
+     */
+    protected function aggregateSuccessfulRuns(array $runs): array
+    {
+        $groups = [];
+
+        foreach ($runs as $run) {
+            if ($run->status !== 'success') {
+                continue;
+            }
+
+            $key = implode('|', [
+                $run->account_email,
+                $run->account_password,
+                $run->code_url,
+            ]);
+
+            if (! isset($groups[$key])) {
+                $groups[$key] = [
+                    'first_run' => $run,
+                    'last_run' => $run,
+                    'seen_count' => 0,
+                ];
+            }
+
+            $groups[$key]['last_run'] = $run;
+            $groups[$key]['seen_count']++;
+        }
+
+        return array_values($groups);
     }
 
     public function resolvePath(?string $customPath = null, string $prefix = 'oxaam-scrape'): string
