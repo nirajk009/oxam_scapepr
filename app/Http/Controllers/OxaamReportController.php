@@ -50,6 +50,7 @@ class OxaamReportController extends Controller
             'uniqueCredentials' => $uniqueCredentials,
             'recentRuns' => $recentRuns,
             'activeSession' => $activeSession,
+            'webTrigger' => (string) config('services.oxaam.web_trigger', 'queue_worker'),
             'stats' => [
                 'total_runs' => OxaamRun::count(),
                 'successful_runs' => OxaamRun::where('status', 'success')->count(),

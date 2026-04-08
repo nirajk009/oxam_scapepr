@@ -51,7 +51,15 @@
             <form method="POST" action="{{ route('report.scrape') }}" style="display:grid;gap:12px">
                 @csrf
                 <button class="btn" type="submit">Run CG-AI scrape now</button>
-                <div class="cli">Keep this running for browser clicks: php artisan queue:work</div>
+                <div class="cli">
+                    @if ($webTrigger === 'queue_worker')
+                        Keep this running for browser clicks: php artisan queue:work
+                    @elseif ($webTrigger === 'background_cli')
+                        Browser clicks launch a background artisan scrape on this host.
+                    @else
+                        Browser clicks run the scrape immediately on this server.
+                    @endif
+                </div>
             </form>
         </div>
     </section>
