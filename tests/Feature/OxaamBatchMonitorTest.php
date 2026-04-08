@@ -196,6 +196,34 @@ class OxaamBatchMonitorTest extends TestCase
         Mail::assertNothingSent();
     }
 
+    public function test_monitor_retires_the_batch_session_so_the_next_batch_starts_fresh(): void
+    {
+        Mail::fake();
+
+        $run = $this->makeSuccessfulRun(
+            email: 'rotate@mapoba.com',
+            password: 'Oxaam121212#',
+            codeUrl: 'https://www.oxaam.com/cgcode72.php',
+        );
+
+        $mock = Mockery::mock(OxaamScraperService::class);
+        $mock->shouldReceive('run')->once()->andReturn($run);
+        $this->app->instance(OxaamScraperService::class, $mock);
+
+        $report = app(OxaamBatchMonitor::class)->run(
+            runs: 1,
+            mode: 'changed',
+            profile: 'production',
+            recipient: 'notify@example.com',
+        );
+
+        $run->session->refresh();
+
+        $this->assertFalse($run->session->is_active);
+        $this->assertSame('Batch completed and forced a fresh session for the next run.', $run->session->last_error);
+        $this->assertSame([$run->oxaam_session_id], $report->meta['retired_session_ids'] ?? []);
+    }
+
     protected function makeSuccessfulRun(string $email, string $password, string $codeUrl): OxaamRun
     {
         $session = OxaamSession::create([

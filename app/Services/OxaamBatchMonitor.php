@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Mail\OxaamBatchReportMail;
 use App\Models\OxaamBatchReport;
 use App\Models\OxaamRun;
+use App\Models\OxaamSession;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -147,8 +148,45 @@ class OxaamBatchMonitor
         }
 
         $report->save();
+        $retiredSessionIds = $this->retireSessionsForBatch($collectedRuns);
+
+        if ($retiredSessionIds !== []) {
+            $meta = $report->meta ?? [];
+            $meta['retired_session_ids'] = $retiredSessionIds;
+            $report->forceFill(['meta' => $meta])->save();
+        }
 
         return $report->fresh();
+    }
+
+    /**
+     * @param  list<OxaamRun>  $runs
+     * @return list<int>
+     */
+    protected function retireSessionsForBatch(array $runs): array
+    {
+        if (! filter_var(config('services.oxaam.rotate_session_after_batch', true), FILTER_VALIDATE_BOOL)) {
+            return [];
+        }
+
+        $sessionIds = collect($runs)
+            ->map(fn (OxaamRun $run) => $run->oxaam_session_id)
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($sessionIds->isEmpty()) {
+            return [];
+        }
+
+        OxaamSession::query()
+            ->whereIn('id', $sessionIds->all())
+            ->where('is_active', true)
+            ->each(function (OxaamSession $session): void {
+                $session->markInvalid('Batch completed and forced a fresh session for the next run.');
+            });
+
+        return $sessionIds->map(fn ($id) => (int) $id)->all();
     }
 
     protected function subjectFor(

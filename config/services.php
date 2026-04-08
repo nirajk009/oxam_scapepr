@@ -45,6 +45,7 @@ return [
         'timeout' => (int) env('OXAAM_TIMEOUT', 20),
         'transport' => env('OXAAM_TRANSPORT', 'curl_binary'),
         'web_trigger' => env('OXAAM_WEB_TRIGGER', 'queue_worker'),
+        'rotate_session_after_batch' => env('OXAAM_ROTATE_SESSION_AFTER_BATCH', true),
         'verify_ssl' => env('OXAAM_VERIFY_SSL', false),
         'curl_binary' => env('OXAAM_CURL_BINARY', 'curl.exe'),
         'user_agent' => env(
