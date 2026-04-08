@@ -25,10 +25,12 @@ Hosting Paths
 Hosting App Notes
 - This project deploys from the repo root.
 - Laravel web entrypoint is public/index.php.
-- Local Windows success currently uses OXAAM_TRANSPORT=curl_binary with curl.exe.
-- Shared hosting will not have curl.exe, so hosting must use the internal Laravel HTTP client instead.
-- Oxaam/Cloudflare has previously blocked the internal Laravel/PHP transport on this machine, so hosting must be re-tested after deploy.
-- Browser-triggered scraping needs a queue worker. On shared hosting, the safer path is the CLI command or cron, not the browser button.
+- Local Windows success uses OXAAM_TRANSPORT=curl_binary with curl.exe.
+- Shared hosting is working with the official curl-impersonate Linux binary, not the stock host curl and not the native Laravel HTTP client.
+- Working hosting binary path:
+  /home4/golde5qk/oxaam-tools/curl-impersonate-v0.6.1/curl_chrome116
+- Stock host curl and native PHP/Node HTTP clients were blocked by Cloudflare on this server.
+- Browser-triggered scraping is configured to run directly on hosting.
 
 Suggested Hosting .env Direction
 - Keep the existing hosting .env file.
@@ -36,9 +38,10 @@ Suggested Hosting .env Direction
 - Set APP_DEBUG=false
 - Set APP_URL=https://aplusap.goldengatetechnolabs.com
 - Set the hosting DB credentials already created for this app
-- Set OXAAM_TRANSPORT=laravel_http
-- Do not set OXAAM_CURL_BINARY on hosting
-- If browser-trigger mode is used, keep QUEUE_CONNECTION=database and run a worker or scheduled queue runner
+- Set OXAAM_TRANSPORT=curl_binary
+- Set OXAAM_CURL_BINARY=/home4/golde5qk/oxaam-tools/curl-impersonate-v0.6.1/curl_chrome116
+- Set OXAAM_VERIFY_SSL=false
+- Set OXAAM_WEB_TRIGGER=direct
 
 Deploy Steps
 1. First deploy:
@@ -61,9 +64,11 @@ Useful Runtime Commands
   php artisan oxaam:scrape --runs=1
 - Batch scrape with delay:
   php artisan oxaam:scrape --runs=25 --sleep=1200
+- Production cron currently installed:
+  */30 * * * * cd /home4/golde5qk/aplusap.goldengatetechnolabs.com && /usr/local/bin/php artisan oxaam:scrape --runs=1 --no-csv >> /home4/golde5qk/aplusap.goldengatetechnolabs.com/storage/logs/oxaam-cron.log 2>&1
 
 Important Rules
 - Do not install anything globally
 - Do not touch server .htaccess
 - Do not overwrite hosting .env
-- Verify the hosting transport after deploy because the current working local transport is Windows-specific
+- Verify the hosting curl-impersonate binary still exists after deploy or account cleanup
