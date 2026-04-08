@@ -86,8 +86,9 @@ class OxaamBatchMonitor
 
         $previousReport = OxaamBatchReport::query()
             ->where('profile', $profile)
-            ->where('notification_mode', 'changed')
+            ->whereNotNull('email_sent_at')
             ->where('id', '!=', $report->id)
+            ->orderByDesc('email_sent_at')
             ->orderByDesc('id')
             ->first();
 

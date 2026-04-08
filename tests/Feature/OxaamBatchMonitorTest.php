@@ -130,6 +130,72 @@ class OxaamBatchMonitorTest extends TestCase
         });
     }
 
+    public function test_changed_mode_compares_against_the_last_sent_snapshot_not_the_last_unsent_batch(): void
+    {
+        Mail::fake();
+
+        $firstSuccess = $this->makeSuccessfulRun(
+            email: 'baseline@mapoba.com',
+            password: 'Oxaam999111#',
+            codeUrl: 'https://www.oxaam.com/cgcode71.php',
+        );
+
+        $firstMock = Mockery::mock(OxaamScraperService::class);
+        $firstMock->shouldReceive('run')->once()->andReturn($firstSuccess);
+        $this->app->instance(OxaamScraperService::class, $firstMock);
+
+        app(OxaamBatchMonitor::class)->run(
+            runs: 1,
+            mode: 'changed',
+            profile: 'production',
+            recipient: 'notify@example.com',
+        );
+
+        Mail::assertSentCount(1);
+
+        $failedRun = $this->makeFailedRun('Temporary failure');
+
+        $failedMock = Mockery::mock(OxaamScraperService::class);
+        $failedMock->shouldReceive('run')->once()->andReturn($failedRun);
+        $this->app->instance(OxaamScraperService::class, $failedMock);
+
+        Mail::fake();
+
+        $failedReport = app(OxaamBatchMonitor::class)->run(
+            runs: 1,
+            mode: 'changed',
+            profile: 'production',
+            recipient: 'notify@example.com',
+        );
+
+        $this->assertFalse($failedReport->should_notify);
+        $this->assertSame('no_successful_snapshot', $failedReport->notification_reason);
+        Mail::assertNothingSent();
+
+        $sameAsBaseline = $this->makeSuccessfulRun(
+            email: 'baseline@mapoba.com',
+            password: 'Oxaam999111#',
+            codeUrl: 'https://www.oxaam.com/cgcode71.php',
+        );
+
+        $sameMock = Mockery::mock(OxaamScraperService::class);
+        $sameMock->shouldReceive('run')->once()->andReturn($sameAsBaseline);
+        $this->app->instance(OxaamScraperService::class, $sameMock);
+
+        Mail::fake();
+
+        $report = app(OxaamBatchMonitor::class)->run(
+            runs: 1,
+            mode: 'changed',
+            profile: 'production',
+            recipient: 'notify@example.com',
+        );
+
+        $this->assertFalse($report->should_notify);
+        $this->assertSame('snapshot_unchanged', $report->notification_reason);
+        Mail::assertNothingSent();
+    }
+
     protected function makeSuccessfulRun(string $email, string $password, string $codeUrl): OxaamRun
     {
         $session = OxaamSession::create([
@@ -161,6 +227,38 @@ class OxaamBatchMonitorTest extends TestCase
             'account_email' => $email,
             'account_password' => $password,
             'code_url' => $codeUrl,
+            'scraped_at' => now(),
+        ])->load('session');
+    }
+
+    protected function makeFailedRun(string $message): OxaamRun
+    {
+        $session = OxaamSession::create([
+            'registration_name' => 'Batch Monitor Tester',
+            'registration_email' => 'failed'.uniqid().'@example.com',
+            'registration_phone' => '9876543210',
+            'registration_password' => 'Oxaam654321#',
+            'cookie_name' => 'PHPSESSID',
+            'cookie_value' => uniqid('sess_', true),
+            'cookies' => [['Name' => 'PHPSESSID', 'Value' => uniqid('sess_', true), 'Domain' => 'www.oxaam.com', 'Path' => '/']],
+            'uses_count' => 0,
+            'max_uses' => 300,
+            'is_active' => true,
+            'last_registered_at' => now()->subHour(),
+            'last_validated_at' => now()->subMinute(),
+            'last_used_at' => now()->subMinute(),
+        ]);
+
+        return OxaamRun::create([
+            'oxaam_session_id' => $session->id,
+            'target_service' => 'cgai',
+            'status' => 'failed',
+            'http_status' => 500,
+            'duration_ms' => 500,
+            'session_uses_after' => 0,
+            'service_label' => 'CG-AI',
+            'page_title' => 'Dashboard | Oxaam',
+            'error_message' => $message,
             'scraped_at' => now(),
         ])->load('session');
     }
