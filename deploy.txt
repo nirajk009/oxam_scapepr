@@ -38,6 +38,14 @@ Suggested Hosting .env Direction
 - Set APP_DEBUG=false
 - Set APP_URL=https://aplusap.goldengatetechnolabs.com
 - Set the hosting DB credentials already created for this app
+- Set MAIL_MAILER=smtp
+- Set MAIL_SCHEME=tls
+- Set MAIL_HOST=smtp.gmail.com
+- Set MAIL_PORT=587
+- Set MAIL_USERNAME to the Gmail sender account
+- Set MAIL_PASSWORD to the Gmail app password
+- Set MAIL_FROM_ADDRESS to the Gmail sender account
+- Set MAIL_FROM_NAME=Oxaam Scraper
 - Set OXAAM_TRANSPORT=curl_binary
 - Set OXAAM_CURL_BINARY=/home4/golde5qk/oxaam-tools/curl-impersonate-v0.6.1/curl_chrome116
 - Set OXAAM_VERIFY_SSL=false
@@ -64,8 +72,14 @@ Useful Runtime Commands
   php artisan oxaam:scrape --runs=1
 - Batch scrape with delay:
   php artisan oxaam:scrape --runs=25 --sleep=1200
-- Production cron currently installed:
-  */30 * * * * cd /home4/golde5qk/aplusap.goldengatetechnolabs.com && /usr/local/bin/php artisan oxaam:scrape --runs=1 --no-csv >> /home4/golde5qk/aplusap.goldengatetechnolabs.com/storage/logs/oxaam-cron.log 2>&1
+- Production monitor command:
+  php artisan oxaam:monitor --runs=120 --mode=changed --profile=production --to=niraj.edigillence@gmail.com
+- Test monitor command:
+  php artisan oxaam:monitor --runs=1 --mode=always --profile=test --to=niraj.edigillence@gmail.com --subject-prefix=TEST
+- Production cron target:
+  */30 * * * * cd /home4/golde5qk/aplusap.goldengatetechnolabs.com && /usr/local/bin/php artisan oxaam:monitor --runs=120 --mode=changed --profile=production --to=niraj.edigillence@gmail.com >> /home4/golde5qk/aplusap.goldengatetechnolabs.com/storage/logs/oxaam-monitor.log 2>&1
+- Test cron target:
+  * * * * * cd /home4/golde5qk/aplusap.goldengatetechnolabs.com && /usr/local/bin/php artisan oxaam:monitor --runs=1 --mode=always --profile=test --to=niraj.edigillence@gmail.com --subject-prefix=TEST >> /home4/golde5qk/aplusap.goldengatetechnolabs.com/storage/logs/oxaam-monitor-test.log 2>&1
 
 Important Rules
 - Do not install anything globally
