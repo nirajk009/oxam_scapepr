@@ -39,7 +39,7 @@ Suggested Hosting .env Direction
 - Set APP_URL=https://aplusap.goldengatetechnolabs.com
 - Set the hosting DB credentials already created for this app
 - Set MAIL_MAILER=smtp
-- Set MAIL_SCHEME=tls
+- Set MAIL_SCHEME=smtp
 - Set MAIL_HOST=smtp.gmail.com
 - Set MAIL_PORT=587
 - Set MAIL_USERNAME to the Gmail sender account
