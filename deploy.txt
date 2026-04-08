@@ -31,6 +31,7 @@ Hosting App Notes
   /home4/golde5qk/oxaam-tools/curl-impersonate-v0.6.1/curl_chrome116
 - Stock host curl and native PHP/Node HTTP clients were blocked by Cloudflare on this server.
 - Browser-triggered scraping is configured to run directly on hosting.
+- Production monitor compares each new batch against the last emailed snapshot, not merely the immediately previous batch.
 
 Suggested Hosting .env Direction
 - Keep the existing hosting .env file.
@@ -73,13 +74,13 @@ Useful Runtime Commands
 - Batch scrape with delay:
   php artisan oxaam:scrape --runs=25 --sleep=1200
 - Production monitor command:
-  php artisan oxaam:monitor --runs=120 --mode=changed --profile=production --to=niraj.edigillence@gmail.com
+  php artisan oxaam:monitor --runs=150 --mode=changed --profile=production --to=niraj.edigillence@gmail.com
 - Test monitor command:
-  php artisan oxaam:monitor --runs=1 --mode=always --profile=test --to=niraj.edigillence@gmail.com --subject-prefix=TEST
+  php artisan oxaam:monitor --runs=150 --mode=always --profile=test --to=niraj.edigillence@gmail.com --subject-prefix=TEST
 - Production cron target:
-  */30 * * * * cd /home4/golde5qk/aplusap.goldengatetechnolabs.com && /usr/local/bin/php artisan oxaam:monitor --runs=120 --mode=changed --profile=production --to=niraj.edigillence@gmail.com >> /home4/golde5qk/aplusap.goldengatetechnolabs.com/storage/logs/oxaam-monitor.log 2>&1
+  */30 * * * * cd /home4/golde5qk/aplusap.goldengatetechnolabs.com && /usr/local/bin/php artisan oxaam:monitor --runs=150 --mode=changed --profile=production --to=niraj.edigillence@gmail.com >> /home4/golde5qk/aplusap.goldengatetechnolabs.com/storage/logs/oxaam-monitor.log 2>&1
 - Test cron target:
-  * * * * * cd /home4/golde5qk/aplusap.goldengatetechnolabs.com && /usr/local/bin/php artisan oxaam:monitor --runs=1 --mode=always --profile=test --to=niraj.edigillence@gmail.com --subject-prefix=TEST >> /home4/golde5qk/aplusap.goldengatetechnolabs.com/storage/logs/oxaam-monitor-test.log 2>&1
+  * * * * * cd /home4/golde5qk/aplusap.goldengatetechnolabs.com && /usr/local/bin/php artisan oxaam:monitor --runs=150 --mode=always --profile=test --to=niraj.edigillence@gmail.com --subject-prefix=TEST >> /home4/golde5qk/aplusap.goldengatetechnolabs.com/storage/logs/oxaam-monitor-test.log 2>&1
 
 Important Rules
 - Do not install anything globally
