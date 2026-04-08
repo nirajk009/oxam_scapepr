@@ -1,0 +1,69 @@
+Deployment Handoff
+
+Git Repo
+- Current origin: https://github.com/nirajk009/oxam_scapepr.git
+- Main branch: main
+- Local repo path: D:\scrper
+
+SSH Access
+- Host/IP: 162.241.123.162
+- User: golde5qk
+- Private key path: D:\testing\key\id_rsa
+- Key passphrase: M1PO+YEE6oqc
+- Primary SSH command:
+  ssh -i D:\testing\key\id_rsa golde5qk@162.241.123.162
+- If "Too many authentication failures":
+  ssh -o IdentitiesOnly=yes -i D:\testing\key\id_rsa golde5qk@162.241.123.162
+
+Hosting Paths
+- Home: /home4/golde5qk
+- Live app URL: https://aplusap.goldengatetechnolabs.com/
+- Expected live app path: /home4/golde5qk/aplusap.goldengatetechnolabs.com
+- Do not touch server .htaccess
+- Preserve hosting .env when deploying
+
+Hosting App Notes
+- This project deploys from the repo root.
+- Laravel web entrypoint is public/index.php.
+- Local Windows success currently uses OXAAM_TRANSPORT=curl_binary with curl.exe.
+- Shared hosting will not have curl.exe, so hosting must use the internal Laravel HTTP client instead.
+- Oxaam/Cloudflare has previously blocked the internal Laravel/PHP transport on this machine, so hosting must be re-tested after deploy.
+- Browser-triggered scraping needs a queue worker. On shared hosting, the safer path is the CLI command or cron, not the browser button.
+
+Suggested Hosting .env Direction
+- Keep the existing hosting .env file.
+- Set APP_ENV=production
+- Set APP_DEBUG=false
+- Set APP_URL=https://aplusap.goldengatetechnolabs.com
+- Set the hosting DB credentials already created for this app
+- Set OXAAM_TRANSPORT=laravel_http
+- Do not set OXAAM_CURL_BINARY on hosting
+- If browser-trigger mode is used, keep QUEUE_CONNECTION=database and run a worker or scheduled queue runner
+
+Deploy Steps
+1. First deploy:
+   cd /home4/golde5qk
+   git clone https://github.com/nirajk009/oxam_scapepr.git aplusap.goldengatetechnolabs.com
+2. Existing deploy:
+   cd /home4/golde5qk/aplusap.goldengatetechnolabs.com
+   git pull origin main
+3. Install/update PHP deps:
+   composer install --no-dev --optimize-autoloader
+4. Laravel upkeep:
+   php artisan migrate --force
+   php artisan config:clear
+   php artisan cache:clear
+   php artisan route:clear
+   php artisan view:clear
+
+Useful Runtime Commands
+- One scrape:
+  php artisan oxaam:scrape --runs=1
+- Batch scrape with delay:
+  php artisan oxaam:scrape --runs=25 --sleep=1200
+
+Important Rules
+- Do not install anything globally
+- Do not touch server .htaccess
+- Do not overwrite hosting .env
+- Verify the hosting transport after deploy because the current working local transport is Windows-specific
